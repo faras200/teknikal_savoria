@@ -1,32 +1,72 @@
 <!-- Modal -->
-<div class="modal fade" id="modal-create" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="karyawanModal" tabindex="-1" aria-labelledby="karyawanModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">TAMBAH POST</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="karyawanModalLabel">Form Tambah Karyawan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Form Karyawan -->
+                <form id="karyawanForm">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="namaKaryawan" class="col-sm-3 col-form-label">Nama Karyawan<span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="namaKaryawan" name="nama_karyawan"
+                                placeholder="Masukkan Nama Karyawan">
+                        </div>
+                        <div class="col-6">
+                            <label for="tanggalLahirKaryawan" class="col-sm-3 col-form-label">Tanggal Lahir</label>
+                            <input type="date" class="form-control" id="tanggalLahirKaryawan" name="tanggal_lahir">
+                        </div>
+                    </div>
 
-                <div class="form-group">
-                    <label for="name" class="control-label">Title</label>
-                    <input type="text" class="form-control" id="title">
-                    <div class="alert alert-danger mt-2 d-none" role="alert" id="alert-title"></div>
-                </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="alamat" class="col-sm-3 col-form-label">Alamat</label>
+                            <textarea class="form-control" id="alamat" name="alamat" rows="4" placeholder="Masukkan Alamat"></textarea>
+                        </div>
+                    </div>
 
-
-                <div class="form-group">
-                    <label class="control-label">Content</label>
-                    <textarea class="form-control" id="content" rows="4"></textarea>
-                    <div class="alert alert-danger mt-2 d-none" role="alert" id="alert-content"></div>
-                </div>
-
+                    <!-- Form Keluarga -->
+                    <h5 class="mt-4">Keluarga :</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th scope="col" style="width: 5%">Action</th>
+                                <th scope="col" style="width: 25%">Hubungan Keluarga</th>
+                                <th scope="col" style="width: 35%">Nama</th>
+                                <th scope="col" style="width: 35%">Tanggal Lahir</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keluargaTableBody">
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addRow()"
+                                        id="addRowBtn">+</button>
+                                </td>
+                                <td>
+                                    <select class="form-select" name="hubungan_keluarga[]">
+                                        <option selected>Pilih Hubungan</option>
+                                        <option value="Ibu">Ibu</option>
+                                        <option value="Ayah">Ayah</option>
+                                        <option value="Istri">Istri</option>
+                                        <option value="Anak">Anak</option>
+                                        <option value="Saudara">Saudara</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="form-control" name="nama_keluarga[]"
+                                        placeholder="Masukkan Nama"></td>
+                                <td><input type="date" class="form-control" name="tanggal_lahir_keluarga[]"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">TUTUP</button>
-                <button type="button" class="btn btn-primary" id="store">SIMPAN</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-success" id="simpanBtn">Simpan</button>
             </div>
         </div>
     </div>
@@ -34,92 +74,70 @@
 
 <script>
     //button create post event
-    $('body').on('click', '#btn-create-post', function() {
-
+    $('#btn-create-karyawan').click(function() {
         //open modal
-        $('#modal-create').modal('show');
+        $('#karyawanModal').modal('show');
     });
 
-    //action create post
-    $('#store').click(function(e) {
-        e.preventDefault();
-
-        //define variable
-        let title = $('#title').val();
-        let content = $('#content').val();
-        let token = $("meta[name='csrf-token']").attr("content");
-
-        //ajax
+    // Simpan form karyawan dan keluarga dengan AJAX
+    $('#simpanBtn').click(function() {
+        var formData = $('#karyawanForm').serializeArray();
         $.ajax({
-
-            url: `/posts`,
-            type: "POST",
-            cache: false,
-            data: {
-                "title": title,
-                "content": content,
-                "_token": token
+            url: "{{ route('employee.store') }}",
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
+            data: formData,
             success: function(response) {
-
-                //show success message
+                $('#karyawanModal').modal('hide'); // Tutup modal
+                dataTable.ajax.reload();
                 Swal.fire({
                     type: 'success',
                     icon: 'success',
                     title: `${response.message}`,
                     showConfirmButton: false,
-                    timer: 3000
+                    timer: 2000
                 });
-
-                //data post
-                let post = `
-                    <tr id="index_${response.data.id}">
-                        <td>${response.data.title}</td>
-                        <td>${response.data.content}</td>
-                        <td class="text-center">
-                            <a href="javascript:void(0)" id="btn-edit-post" data-id="${response.data.id}" class="btn btn-primary btn-sm">EDIT</a>
-                            <a href="javascript:void(0)" id="btn-delete-post" data-id="${response.data.id}" class="btn btn-danger btn-sm">DELETE</a>
-                        </td>
-                    </tr>
-                `;
-
-                //append to table
-                $('#table-posts').prepend(post);
-
-                //clear form
-                $('#title').val('');
-                $('#content').val('');
-
-                //close modal
-                $('#modal-create').modal('hide');
-
-
             },
             error: function(error) {
-
-                if (error.responseJSON.title[0]) {
-
-                    //show alert
-                    $('#alert-title').removeClass('d-none');
-                    $('#alert-title').addClass('d-block');
-
-                    //add message to alert
-                    $('#alert-title').html(error.responseJSON.title[0]);
-                }
-
-                if (error.responseJSON.content[0]) {
-
-                    //show alert
-                    $('#alert-content').removeClass('d-none');
-                    $('#alert-content').addClass('d-block');
-
-                    //add message to alert
-                    $('#alert-content').html(error.responseJSON.content[0]);
-                }
-
+                // Jika terjadi error
+                Swal.fire({
+                    type: 'error',
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan, Coba Lagi Nanti!!',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                console.log(error); // Lihat error dari server
             }
-
         });
+    });
 
+    // Function to add a new row
+    function addRow() {
+        var newRow = `
+                    <tr>
+                        <td><button type="button" class="btn btn-outline-danger removeRowBtn" >-</button></td>
+                        <td>
+                            <select class="form-select" name="hubungan_keluarga[]">
+                                <option selected>Pilih Hubungan</option>
+                                <option value="Ibu">Ibu</option>
+                                <option value="Ayah">Ayah</option>
+                                <option value="Istri">Istri</option>
+                                <option value="Anak">Anak</option>
+                                <option value="Saudara">Saudara</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control" name="nama_keluarga[]" placeholder="Masukkan Nama"></td>
+                        <td><input type="date" class="form-control" name="tanggal_lahir_keluarga[]"></td>
+                    </tr>`;
+        $('#keluargaTableBody').append(newRow);
+
+    };
+
+    // Event handler to remove a row
+    $(document).on('click', '.removeRowBtn', function() {
+        $(this).closest('tr').remove();
     });
 </script>

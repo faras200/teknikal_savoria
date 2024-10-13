@@ -1,34 +1,56 @@
 <!-- Modal -->
-<div class="modal fade" id="modal-edit" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">EDIT POST</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="karyawanModalLabel">Form Edit Karyawan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Form Karyawan -->
+                <form id="karyawanFormEdit">
+                    <input type="hidden" name="id" id="idEdit">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="namaKaryawan" class="col-sm-3 col-form-label">Nama Karyawan<span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="namaKaryawanEdit" name="nama_karyawan"
+                                placeholder="Masukkan Nama Karyawan">
+                        </div>
+                        <div class="col-6">
+                            <label for="tanggalLahirKaryawan" class="col-sm-3 col-form-label">Tanggal Lahir</label>
+                            <input type="date" class="form-control" id="tanggalLahirKaryawanEdit"
+                                name="tanggal_lahir">
+                        </div>
+                    </div>
 
-                <input type="hidden" id="post_id">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="alamat" class="col-sm-3 col-form-label">Alamat</label>
+                            <textarea class="form-control" id="alamatEdit" name="alamat" rows="4" placeholder="Masukkan Alamat"></textarea>
+                        </div>
+                    </div>
 
-                <div class="form-group">
-                    <label for="name" class="control-label">Title</label>
-                    <input type="text" class="form-control" id="title-edit">
-                    <div class="alert alert-danger mt-2 d-none" role="alert" id="alert-title-edit"></div>
-                </div>
+                    <!-- Form Keluarga -->
+                    <h5 class="mt-4">Keluarga :</h5>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th scope="col" style="width: 5%">Action</th>
+                                <th scope="col" style="width: 25%">Hubungan Keluarga</th>
+                                <th scope="col" style="width: 35%">Nama</th>
+                                <th scope="col" style="width: 35%">Tanggal Lahir</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keluargaTableBodyEdit">
 
-
-                <div class="form-group">
-                    <label class="control-label">Content</label>
-                    <textarea class="form-control" id="content-edit" rows="4"></textarea>
-                    <div class="alert alert-danger mt-2 d-none" role="alert" id="alert-content-edit"></div>
-                </div>
-
+                        </tbody>
+                    </table>
+                </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">TUTUP</button>
-                <button type="button" class="btn btn-primary" id="update">UPDATE</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-success" id="updateBtn">Update</button>
             </div>
         </div>
     </div>
@@ -36,105 +58,112 @@
 
 <script>
     //button create post event
-    $('body').on('click', '#btn-edit-post', function() {
-
-        let post_id = $(this).data('id');
-
-        //fetch detail post with ajax
+    function Edit(id) {
+        //fetch detail employee
         $.ajax({
-            url: `/posts/${post_id}`,
-            type: "GET",
+            url: "{{ route('employee.show') }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                id: id
+            },
             cache: false,
             success: function(response) {
 
-                //fill data to form
-                $('#post_id').val(response.data.id);
-                $('#title-edit').val(response.data.title);
-                $('#content-edit').val(response.data.content);
+                $('#namaKaryawanEdit').val(response.nama);
+                $('#alamatEdit').val(response.alamat);
+                $('#idEdit').val(response.id);
+                let dateParts = response.tanggal_lahir.split("-");
+                let formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                $('#tanggalLahirKaryawanEdit').val(formattedDate);
 
-                //open modal
-                $('#modal-edit').modal('show');
+                $('#keluargaTableBodyEdit').empty(); // Kosongkan dulu isi table
+                response.keluarga.forEach(function(keluarga, index) {
+                    var button = index === 0 ?
+                        `<button type="button" class="btn btn-outline-primary" onclick="addEditRow()">+</button>` :
+                        `<button type="button" class="btn btn-outline-danger removeRowBtn">-</button>`;
+
+                    var newRow = `
+                        <tr>
+                            <td>${button}</td>
+                            <td>
+                                <select class="form-select" name="hubungan_keluarga[]">
+                                    <option ${keluarga.hubungan == 'Ibu' ? 'selected' : ''} value="Ibu">Ibu</option>
+                                    <option ${keluarga.hubungan == 'Ayah' ? 'selected' : ''} value="Ayah">Ayah</option>
+                                    <option ${keluarga.hubungan == 'Istri' ? 'selected' : ''} value="Istri">Istri</option>
+                                    <option ${keluarga.hubungan == 'Anak' ? 'selected' : ''} value="Anak">Anak</option>
+                                    <option ${keluarga.hubungan == 'Saudara' ? 'selected' : ''} value="Saudara">Saudara</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="form-control" name="nama_keluarga[]" value="${keluarga.nama}"></td>
+                            <td><input type="date" class="form-control" name="tanggal_lahir_keluarga[]" value="${keluarga.tanggal_lahir}"></td>
+                        </tr>`;
+
+                    $('#keluargaTableBodyEdit').append(newRow);
+                });
+
+
+                $('#editModal').modal('show');
             }
         });
-    });
+    };
 
     //action update post
-    $('#update').click(function(e) {
-        e.preventDefault();
+    $('#updateBtn').click(function() {
 
-        //define variable
-        let post_id = $('#post_id').val();
-        let title = $('#title-edit').val();
-        let content = $('#content-edit').val();
-        let token = $("meta[name='csrf-token']").attr("content");
-
-        //ajax
+        var formData = $('#karyawanFormEdit').serializeArray();
         $.ajax({
-
-            url: `/posts/${post_id}`,
-            type: "PUT",
-            cache: false,
-            data: {
-                "title": title,
-                "content": content,
-                "_token": token
+            url: "{{ route('employee.update') }}",
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
+            data: formData,
             success: function(response) {
-
-                //show success message
+                $('#editModal').modal('hide'); // Tutup modal
+                dataTable.ajax.reload();
                 Swal.fire({
                     type: 'success',
                     icon: 'success',
                     title: `${response.message}`,
                     showConfirmButton: false,
-                    timer: 3000
+                    timer: 2000
                 });
-
-                //data post
-                let post = `
-                    <tr id="index_${response.data.id}">
-                        <td>${response.data.title}</td>
-                        <td>${response.data.content}</td>
-                        <td class="text-center">
-                            <a href="javascript:void(0)" id="btn-edit-post" data-id="${response.data.id}" class="btn btn-primary btn-sm">EDIT</a>
-                            <a href="javascript:void(0)" id="btn-delete-post" data-id="${response.data.id}" class="btn btn-danger btn-sm">DELETE</a>
-                        </td>
-                    </tr>
-                `;
-
-                //append to post data
-                $(`#index_${response.data.id}`).replaceWith(post);
-
-                //close modal
-                $('#modal-edit').modal('hide');
-
-
             },
             error: function(error) {
-
-                if (error.responseJSON.title[0]) {
-
-                    //show alert
-                    $('#alert-title-edit').removeClass('d-none');
-                    $('#alert-title-edit').addClass('d-block');
-
-                    //add message to alert
-                    $('#alert-title-edit').html(error.responseJSON.title[0]);
-                }
-
-                if (error.responseJSON.content[0]) {
-
-                    //show alert
-                    $('#alert-content-edit').removeClass('d-none');
-                    $('#alert-content-edit').addClass('d-block');
-
-                    //add message to alert
-                    $('#alert-content-edit').html(error.responseJSON.content[0]);
-                }
-
+                // Jika terjadi error
+                Swal.fire({
+                    type: 'error',
+                    icon: 'error',
+                    title: 'Terjadi Kesalahan, Coba Lagi Nanti!!',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                console.log(error); // Lihat error dari server
             }
-
         });
 
     });
+
+    // Function to add a new row
+    function addEditRow() {
+        var newRow = `
+                    <tr>
+                        <td><button type="button" class="btn btn-outline-danger removeRowBtn" >-</button></td>
+                        <td>
+                            <select class="form-select" name="hubungan_keluarga[]">
+                                <option selected>Pilih Hubungan</option>
+                                <option value="Ibu">Ibu</option>
+                                <option value="Ayah">Ayah</option>
+                                <option value="Istri">Istri</option>
+                                <option value="Anak">Anak</option>
+                                <option value="Saudara">Saudara</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="form-control" name="nama_keluarga[]" placeholder="Masukkan Nama"></td>
+                        <td><input type="date" class="form-control" name="tanggal_lahir_keluarga[]"></td>
+                    </tr>`;
+        $('#keluargaTableBodyEdit').append(newRow);
+
+    };
 </script>
