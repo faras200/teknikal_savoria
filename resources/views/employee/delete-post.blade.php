@@ -1,13 +1,11 @@
 <script>
-    //button create post event
-    $('body').on('click', '#btn-delete-post', function() {
+    function Delete(id) {
 
-        let post_id = $(this).data('id');
         let token = $("meta[name='csrf-token']").attr("content");
 
         Swal.fire({
-            title: 'Apakah Kamu Yakin?',
-            text: "ingin menghapus data ini!",
+            title: 'Ingin Hapus Data?',
+            text: "Data yang hilang tidak bisa dikembalikan!",
             icon: 'warning',
             showCancelButton: true,
             cancelButtonText: 'TIDAK',
@@ -17,12 +15,12 @@
 
                 //fetch to delete data
                 $.ajax({
-
-                    url: `/posts/${post_id}`,
-                    type: "DELETE",
+                    url: "{{ route('employee.destroy') }}",
+                    type: "POST",
                     cache: false,
                     data: {
-                        "_token": token
+                        "_token": token,
+                        "id": id
                     },
                     success: function(response) {
 
@@ -32,11 +30,10 @@
                             icon: 'success',
                             title: `${response.message}`,
                             showConfirmButton: false,
-                            timer: 3000
+                            timer: 2000
                         });
 
-                        //remove post on table
-                        $(`#index_${post_id}`).remove();
+                        dataTable.ajax.reload();
                     }
                 });
 
@@ -44,5 +41,5 @@
             }
         })
 
-    });
+    };
 </script>
